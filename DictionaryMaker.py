@@ -20,17 +20,9 @@ def divideText(path):
         word = words.rstrip(' ')
          #word = re.sub(r'\{[^)]*\}', '', words)
         print(word)
-        # word = words.split(" ")
-        # for w in word: 
-        #   if(w[0] != " "){
-            
-        #   }
 
-        # words = words.replace("{","(")
-        # # words = words.replace("")
-        # # words="cccc  (dddddee}  fff"
-        # word = words.rstrip("(")
-        print(word)
+        with open('sample.csv', 'a') as f_a:
+          print(word+","+means, file=f_a)
         
       #else:
         #print("Error: configuration failed", file=sys.stderr)
