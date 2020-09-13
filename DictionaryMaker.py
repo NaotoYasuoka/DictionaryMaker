@@ -17,12 +17,12 @@ def divideText(path):
         means = splitStr[1]
 
         #word = words.replace("\{", "")
-        word = words.rstrip(' ')
+        word = words.rstrip('  {')
          #word = re.sub(r'\{[^)]*\}', '', words)
         print(word)
 
-        with open('sample.csv', 'a') as f_a:
-          print(word+","+means, file=f_a)
+        # with open('sample.csv', 'a') as f_a:
+          # print(word+","+means, file=f_a)
         
       #else:
         #print("Error: configuration failed", file=sys.stderr)
