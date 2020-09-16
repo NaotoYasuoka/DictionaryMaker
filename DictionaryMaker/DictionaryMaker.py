@@ -1,6 +1,7 @@
 import os, csv
 import sys
 import string
+from janome.tokenizer import Tokenizer
 
 def makeWord(str):
   words = str.split(" ")
@@ -101,6 +102,22 @@ def read_write_File(read_paths, write_path, writeType):
         saveFile(write_path, line, writeType)
         line = r_f.readline()
 
+
+def edit_Dictionary(read_paths):
+  for r_path in read_paths:
+    with open(r_path, mode="r", encoding="utf-8") as r_f:
+      line = r_f.readline()
+      while line:
+        str = line.rstrip()
+        str = str.lstrip("■")
+        word_means = str.split(":")
+        words = word_means[0]
+        means = word_means[1]
+        words = words.rstrip("{")
+        
+        print(words,means)
+
+
 def saveFile(write_path, wordInfo, writeType):
   #if((wordInfo["word"] != "") & (wordInfo["means"] != "")):
     if("csv" == writeType):
@@ -118,7 +135,7 @@ def saveFile(write_path, wordInfo, writeType):
 
 
 def divideFile():
-  # 辞書の細分化
+  # 辞書の細分化(A-M, N-Z)
   with open("../../../dictionary/EIJIRO-1448.TXT", mode="r", encoding="cp932") as r_f:
     with open("./dictionary/EIJIRO_A-M.txt", mode="a", encoding="utf-8") as w_f_a:
       with open("./dictionary/EIJIRO_N-Z.txt", mode="a", encoding="utf-8") as w_f_n:
@@ -137,14 +154,16 @@ def divideFile():
 
 def main():
   divideFile()
-  read_paths = ["../../../dictionary/EIJIRO-1448.TXT"]
+  # read_paths = ["../../../dictionary/EIJIRO-1448.TXT"]
   # read_path = "../../../dictionary/EIJIRO_.txt"
-  #read_paths = ["./dictionary/EIJIRO_A-M.txt", "./dictionary/EIJIRO_N-Z.txt"]
+  read_paths = ["./dictionary/EIJIRO_A-M.txt", "./dictionary/EIJIRO_N-Z.txt"]
   #read_path = "./dictionary/test_EIJIRO.txt"
   #read_path = "../../../dictionary/EIJIRO_.txt"
   # write_path = "./dictionary/EIJIRO_treatment.csv"
   write_path = "./dictionary/EIJIRO_A-M.txt"
   # read_write_File(read_paths, write_path, "txt")
+  edit_Dictionary(read_paths)
+
 
 if __name__ == "__main__":
     main()
