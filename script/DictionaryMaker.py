@@ -3,24 +3,53 @@ import sys
 import string
 import re
 import alkana
+import urllib.request
+from bs4 import BeautifulSoup
 from janome.tokenizer import Tokenizer
 from pykakasi import kakasi
+from kanjize import int2kanji, kanji2int
+
+from make_baseform import english_to_kana as etok
+
+import sys
+sys.path.append('../')
+import __init__ as init
 
 
-
-PartOfSpeech={"名":True, "不":False, "副":False, "形":False, "雑誌名":True, "商標":True, "他動":False, "間投":False, "人名":False, "組織":True, "著作":True, "映画":True, "地名":True, "連結":False, "自動":False, "バンド名":True, "省略形":False}
-# symbol=["《", "〔", "〈", "（", "［"]
+# PartOfSpeech={"名":True, "不":False, "副":False, "形":False, "雑誌名":True, "商標":True, "他動":False, "間投":False, "人名":False, "組織":True, "著作":True, "映画":True, "地名":True, "連結":False, "自動":False, "バンド名":True, "省略形":False}
+PartOfSpeech={"名":True, "不":True, "副":True, "形":True, "雑誌名":True, "商標":True, "他動":True, "間投":True, "人名":False, "組織":True, "著作":True, "映画":True, "地名":True, "連結":True, "自動":True, "バンド名":True, "省略形":True, "動":True, "新聞名":True}
+alphabet={"A":"エー", "B":"ビー", "C":"シー", "D":"ディ", "E":"イー", "F":"エフ", "G":"ジー", "H":"エイチ", "I":"アイ", "J":"ジェー", "K":"ケイ", "L":"エル", "M":"エム", "N":"エヌ", "O":"オウ", "P":"ピー", "Q":"キュウ", "R":"アール", "S":"エス", "T":"ティー", "U":"ユー", "V":"ブイ","W":"ダブル", "X":"エックス", "Y":"ワイ", "Z":"ゼット"}
+Symbols={"+":"プラス", "-":"マイナス", "℃":"ド", "α":"アルファ", "β":"ベータ", "×":"バツ", "χ":"カイ", "？":"クエスチョンマーク", "γ":"ガンマ", "Δ":"デルタ", "ζ":"ゼータ", "η":"イータ", "θ":"シータ", "ι":"イオタ", "κ":"カッパ", "λ":"ラムダ", "μ":"ミュー", "ν":"ミュー", "ξ":"クシー", "ο":"オミクロン", "π":"パイ", "ρ":"ロー", "σ":"シグマ", "τ":"タウ", "υ":"ウプシロン", "φ":"ファイ", "ψ":"プシー", "Ω":"オメガ"}
+Number={"0":"れい", ".":"てん"}
 symbol={"《":"《.*》", "〔":"〔.*〕", "〈":"〈.*〉", "（":"（.*）", "［":"［.*］"}
+
+
+
+# https://qiita.com/tame3_4dream/items/1dc46838747dc692d4da
+def english_to_katakana(word):
+  url = 'https://www.sljfaq.org/cgi/e2k_ja.cgi'
+  url_q = url + '?word=' + word
+  headers = {'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:47.0) Gecko/20100101 Firefox/47.0'}
+
+  request = urllib.request.Request(url_q, headers=headers)
+  html = urllib.request.urlopen(request)
+  soup = BeautifulSoup(html, 'html.parser')
+  katakana_string = soup.find_all(class_='katakana-string')[0].string.replace('\n', '')
+
+  return katakana_string
+
 
 def makeMean(str):
   splitStr = str.lstrip(" ")
-  mean_1 = splitStr.split('◆')[0]
-  mean_2 = mean_1.split('【')[0]
-  mean_3 = mean_2.split('■')[0]
-  mean_4 = mean_3.split('＝<')[0]
-  mean_5 = mean_4.split('〈英〉')[0]
-  mean_6 = mean_5.split('<→')[0]
-  return mean_6
+  mean = splitStr.split('◆')[0]
+  mean = mean.split('【')[0]
+  mean = mean.split('■')[0]
+  mean = mean.split('＝<')[0]
+  mean = mean.split('〈英〉')[0]
+  mean = mean.split('<→')[0]
+  mean = re.sub("＝", "", mean)
+  mean = re.sub("…", "", mean)
+  return mean
 
 def divideText(str):
   obj={}
@@ -64,27 +93,107 @@ def classification_PoS(list):
     return None
 
 
-def editMeans(str):
+
+k = kakasi()  # Generate kakasi instance
+k.setMode('J', 'H') #漢字からひらがなに変換
+k.setMode('K', 'H')
+conv = k.getConverter()
+
+def English_to_Kana(str, fname):
+  read = str.strip()
+  english = re.compile('[a-zA-Z]+')
+  words = english.findall(read)
+  if((len(words) >= 1) & (fname == "EngDict_")):
+    for w in words:
+      if(len(w) == 1):
+        furigana = alphabet.get(w.upper())
+        read = read.replace(w, furigana)
+      else:
+        count = 0
+        for i in range(len(w)):
+          if (w[i] >= "A") & (w[i] <= "Z"):
+            count+=1 
+          if(count >= len(w)/2):
+            for i in range(len(w)):
+              furigana = alphabet.get(w[i].upper())
+              if((w[i] in read) | (furigana != None)):
+                read = read.replace(w[i], furigana)
+          # else:
+            # e2k = etok.EnglishToKana()
+            # furigana = e2k.convert(w)
+            # if(furigana != "ERROR 辞書にありません"):
+            # read = read.replace(w, furigana)
+  # 英語訳しりとりモードの辞書作成
+  else:
+    if(len(words) >= 1):
+      for w in words:
+        if(len(w) == 1):
+          furigana = alphabet.get(w.upper())
+          read = read.replace(w, furigana)
+        else:
+          count = 0
+          for i in range(len(w)):
+            count+=1 if (w[i] >= "A") & (w[i] <= "Z") else 0
+          if(count >= len(w)/2):
+            for i in range(len(w)):
+              furigana = alphabet.get(w[i].upper())
+              if((w[i] in read) | (furigana != None)):
+                read = read.replace(w[i], furigana)
+          else:
+            read = ""      
+
+  numbers = re.findall(r'[0-9]+\.?[0-9]*', read)
+  if(len(numbers) >= 1):
+    for n in numbers:
+      if("." in n):
+        for i in range(len(n)):
+          if((n[i] == ".") | (n[i] == "0")):
+            furigana = Number.get(n[i])
+          else:
+            furigana = int2kanji(int(n[i]))
+          read = read.replace(n[i], furigana)
+      else:
+        furigana = int2kanji(int(n))
+        read = read.replace(n, furigana)
+  for s in Symbols.keys():
+    if(s in Symbols):
+      read = read.replace(s, Symbols[s])
+  if(read != ""):
+    read = conv.do(read)
+    # if((read[0] >= "あ") & (read[0] <= "ん") | (read[-1] >= "あ") & (read[-1] <= "ん")):
+    return str+","+conv.do(read)
+    # else:
+      # return None
+  else:
+    return None
+
+
+
+def editMeans(str, fname):
   means_list = []
   str = makeMean(str)
-  str = removeSymbol(str)
+  if(fname == "EngTrans_"):
+    str = removeSymbol(str)
+  str = str.replace("（", "(")
+  str = str.replace("）", ")")
   list = str.split("、")
-  k = kakasi()  # Generate kakasi instance
-  k.setMode('J', 'H') #漢字からひらがなに変換
-  k.setMode('K', 'H')
-  conv = k.getConverter()
   if(len(list) != 0):
     for s in list:
       if(s != ""):
-        means_list.append(s+","+conv.do(s))
+        if((s[0] == "～") | (s[0] == "「") | (s[0] == "『") | (s[0] == "＿") | (s[0] == "○")):
+          s = ""
+      if(s != ""):
+        mean = English_to_Kana(s, fname)
+        if(mean != None):
+          means_list.append(mean)  
   if(means_list != []):
     return means_list
   else:
     return None
 
 
-def edit_Dictionary(read_paths):
-  write_path="../dictionary/English_Trans/EngTrans_"
+
+def edit_Dictionary(read_paths, save_info):
   leadAlphabet = ""
   old_word = ""
   means_list = []
@@ -97,14 +206,12 @@ def edit_Dictionary(read_paths):
         word_means = str.split(":")
         w = word_means[0]
         m = word_means[1]
-        # w = re.sub('.*\{', "", w)
-        # pos = re.sub('\}', "", pos)
         word = re.sub("\{.*\}", "", w)
         pos = re.findall('\{.*\}', w)
         word = word.rstrip()
         pos = classification_PoS(pos)
         if(None != pos):
-          mean = editMeans(m)
+          mean = editMeans(m, save_info["fname"])
           if(None != mean):
             if(old_word == word):
               for m in mean:
@@ -119,11 +226,12 @@ def edit_Dictionary(read_paths):
                 means_txt = means_txt.rstrip("_")
                 if(leadAlphabet != old_word[0].upper()):
                   leadAlphabet = old_word[0].upper()
-                  saveFile(write_path+leadAlphabet+".csv", "word", "meanings", "score")
+                  # saveFile(save_info["dir"]+save_info["fname"]+leadAlphabet+".csv", "word", "meanings", "score")
                   # print(old_word, pos, means_txt)
                   print(leadAlphabet+"を書き込み中")
                 # print(pos, old_word, means_txt)
-                saveFile(write_path+leadAlphabet+".csv", old_word, means_txt, "-")
+                init.Add_WriteFile(save_info["dir"]+save_info["fname"]+leadAlphabet+".csv", old_word, means_txt, int(0))
+                # saveFile(save_info["dir"]+save_info["fname"]+leadAlphabet+".csv", old_word, means_txt, int(0))
               old_word = word
               # means_list = []
               means_list = mean

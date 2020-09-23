@@ -2,10 +2,15 @@ import os, csv
 import string
 import shutil
 import re
+import sys
+sys.path.append('../')
+import __init__ as init
 
-def editScore(str, fname, csv_path):
-  path = csv_path + str[0].upper() + ".csv"
-  write_path = "../dictionary/Adding_score/EngTrans_"+str[0].upper()+".csv"
+Scores={"5":1, "4":2, "3":3, "pre2":4, "2":5, "pre1":6, "1":7}
+
+def editScore(csv_path, adding_path, file_h, str, score):
+  path = csv_path + file_h + str[0].upper() + ".csv"
+  write_path = adding_path + file_h + str[0].upper() + ".csv"
   with open(path, mode="r", encoding="utf-8") as rf:
     reader = csv.reader(rf)
     # ヘッダー行を飛ばす
@@ -16,33 +21,25 @@ def editScore(str, fname, csv_path):
       for line in reader:
         if(str == line[0]):
           # print(str)
-          print(fname)
-          writer.writerow([line[0], line[1], fname])
+          writer.writerow([line[0], line[1], Scores[score]])
         else:
           writer.writerow([line[0], line[1], line[2]])
 
 
-def editDictionary(csv_path, eiken_paths):
-  d = csv_path.split("/")
-  n = len(d)
-  dir = ""
-  for i in range(n-1):
-    dir += d[i] + "/"
-  print(dir)
+def editDictionary(read_info, eiken_paths, adding_path):
   for path in eiken_paths:
     print("** "+ path + " **********")
     list = path.split("/")
     fname = list[len(list)-1]
     fname = re.sub(".*-", "", fname)
-    fname = re.sub(".txt", "", fname)
+    score = re.sub(".txt", "", fname)
     with open(path, mode="r", encoding="utf-8") as f:
       str = f.read()
       list = str.split(",")
       for l in list:
-        editScore(l, fname, csv_path)
-        write_path = '../dictionary/Adding_score/EngTrans_'+l[0].upper()+".csv"
-        move_path = dir + 'EngTrans_'+l[0].upper()+".csv"
-        
+        editScore(read_info["dir"], adding_path, read_info["fname"], l, score)
+        write_path = adding_path + read_info["fname"] + l[0].upper() + ".csv" 
+        move_path = read_info["dir"] + read_info["fname"] + l[0].upper() + ".csv"
         shutil.move(write_path, move_path)
 
 
@@ -59,7 +56,7 @@ def main():
 #   Alphabet = list(Alphabet)
 #   for a in Alphabet:
 #     csv_paths.append(path+a+".csv")
-  editDictionary("../dictionary/English_Trans/EngTrans_", eiken_paths)
+  # editDictionary("../dictionary/English_Trans/EngTrans_", eiken_paths)
 
 if __name__ == "__main__":
   main()
